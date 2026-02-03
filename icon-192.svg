@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="40" fill="#1a1a2e"/>
+  <circle cx="96" cy="80" r="45" fill="none" stroke="#4cc9f0" stroke-width="6"/>
+  <line x1="96" y1="35" x2="96" y2="55" stroke="#4cc9f0" stroke-width="6" stroke-linecap="round"/>
+  <line x1="96" y1="105" x2="96" y2="125" stroke="#4cc9f0" stroke-width="6" stroke-linecap="round"/>
+  <line x1="51" y1="80" x2="71" y2="80" stroke="#4cc9f0" stroke-width="6" stroke-linecap="round"/>
+  <line x1="121" y1="80" x2="141" y2="80" stroke="#4cc9f0" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="96" cy="80" r="8" fill="#f72585"/>
+  <line x1="96" y1="80" x2="120" y2="60" stroke="#f72585" stroke-width="5" stroke-linecap="round"/>
+  <text x="96" y="165" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#4cc9f0" text-anchor="middle">inHg</text>
+</svg>
