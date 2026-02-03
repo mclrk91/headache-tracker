@@ -1468,16 +1468,27 @@
 
             const periodLength = cycleData.settings.avgPeriodLength;
 
-            // Determine phase
+            // Determine phase - DON'T wrap cycle day if period hasn't started yet
             let phase, phaseName, phaseDesc;
-            const cycleDay = ((daysSinceLastPeriod - 1) % avgCycleLength) + 1;
+
+            // Use actual days since last period (no modulo) until a new period is logged
+            const cycleDay = daysSinceLastPeriod;
             const ovulationDay = Math.round(avgCycleLength - 14); // Ovulation typically 14 days before next period
             const pmsStart = avgCycleLength - 7; // PMS typically starts ~7 days before period
+
+            // Check if cycle is extended (past expected length)
+            const isExtendedCycle = cycleDay > avgCycleLength;
 
             if (cycleDay <= periodLength) {
                 phase = 'period';
                 phaseName = 'Period';
                 phaseDesc = `Day ${cycleDay} of ${periodLength}`;
+            } else if (isExtendedCycle) {
+                // Cycle is longer than expected - period is late
+                phase = 'late';
+                phaseName = 'Late';
+                const daysLate = cycleDay - avgCycleLength;
+                phaseDesc = `${daysLate} day${daysLate > 1 ? 's' : ''} past expected`;
             } else if (cycleDay <= ovulationDay - 2) {
                 phase = 'follicular';
                 phaseName = 'Follicular';
@@ -1517,7 +1528,8 @@
                 daysUntilPMS,
                 nextPeriodDate,
                 lastPeriodStart,
-                daysSinceLastPeriod
+                daysSinceLastPeriod,
+                isExtendedCycle
             };
         }
 
@@ -1554,24 +1566,31 @@
                 follicular: `rgba(167, 139, 250, ${opacity})`,
                 ovulation: `rgba(52, 211, 153, ${opacity})`,
                 luteal: `rgba(251, 191, 36, ${opacity})`,
-                pms: `rgba(251, 146, 60, ${opacity})`
+                pms: `rgba(251, 146, 60, ${opacity})`,
+                late: `rgba(239, 68, 68, ${opacity})`
             };
             return colors[phase] || colors.follicular;
         }
 
         function updateCycleTimeline(info) {
             const timeline = document.getElementById('cycleTimeline');
-            const { avgCycleLength, periodLength, ovulationDay, pmsStart, cycleDay } = info;
+            const { avgCycleLength, periodLength, ovulationDay, pmsStart, cycleDay, isExtendedCycle } = info;
+
+            // For extended cycles, show the timeline at full width with marker past the end
+            const displayCycleLength = isExtendedCycle ? cycleDay : avgCycleLength;
 
             // Calculate segment widths as percentages
-            const periodPct = (periodLength / avgCycleLength) * 100;
-            const follicularPct = ((ovulationDay - 2 - periodLength) / avgCycleLength) * 100;
-            const ovulationPct = (5 / avgCycleLength) * 100; // ~5 day window
-            const lutealPct = ((pmsStart - ovulationDay - 2) / avgCycleLength) * 100;
-            const pmsPct = ((avgCycleLength - pmsStart + 1) / avgCycleLength) * 100;
+            const periodPct = (periodLength / displayCycleLength) * 100;
+            const follicularPct = ((ovulationDay - 2 - periodLength) / displayCycleLength) * 100;
+            const ovulationPct = (5 / displayCycleLength) * 100; // ~5 day window
+            const lutealPct = ((pmsStart - ovulationDay - 2) / displayCycleLength) * 100;
+            const pmsPct = ((avgCycleLength - pmsStart + 1) / displayCycleLength) * 100;
 
-            // Current position marker
-            const markerPosition = ((cycleDay - 0.5) / avgCycleLength) * 100;
+            // For extended cycles, add a "late" segment
+            const latePct = isExtendedCycle ? ((cycleDay - avgCycleLength) / displayCycleLength) * 100 : 0;
+
+            // Current position marker (cap at 98% for visibility)
+            const markerPosition = Math.min(((cycleDay - 0.5) / displayCycleLength) * 100, 98);
 
             timeline.innerHTML = `
                 <div class="cycle-timeline-segment period" style="width: ${periodPct}%"></div>
@@ -1579,6 +1598,7 @@
                 <div class="cycle-timeline-segment ovulation" style="width: ${ovulationPct}%"></div>
                 <div class="cycle-timeline-segment luteal" style="width: ${lutealPct}%"></div>
                 <div class="cycle-timeline-segment pms" style="width: ${pmsPct}%"></div>
+                ${isExtendedCycle ? `<div class="cycle-timeline-segment" style="width: ${latePct}%; background: #ef4444;"></div>` : ''}
                 <div class="cycle-timeline-marker" style="position: absolute; left: ${markerPosition}%; top: 0; height: 100%;"></div>
             `;
             timeline.style.position = 'relative';
@@ -1588,9 +1608,10 @@
             const insightText = document.getElementById('cycleInsightText');
             let insight = '';
 
-            // Check if cycle is unusually long
-            if (info.daysSinceLastPeriod > info.avgCycleLength + 7) {
-                insight = `Your cycle is longer than usual (Day ${info.daysSinceLastPeriod}). This can happen due to stress, travel, or natural variation. Consider logging when your period starts to help track patterns.`;
+            // Check if cycle is late/extended
+            if (info.phase === 'late' || info.isExtendedCycle) {
+                const daysLate = info.cycleDay - info.avgCycleLength;
+                insight = `You're on <strong>Day ${info.cycleDay}</strong> — ${daysLate} day${daysLate > 1 ? 's' : ''} past your expected cycle length of ${info.avgCycleLength} days. Extended cycles can happen due to stress, travel, illness, or natural variation. Tap "Period Started" when it begins to update your tracking.`;
             } else if (info.phase === 'pms') {
                 insight = `You're in your <strong>PMS phase</strong> - headaches are more likely now. Your period is expected in ~${info.daysUntilNextPeriod} days (around ${info.nextPeriodDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}). Stay hydrated and consider preemptive care.`;
             } else if (info.phase === 'period') {
