@@ -193,7 +193,7 @@
         .gauge-card {
             background: linear-gradient(145deg, #0f3460 0%, #1a1a40 100%);
             border-radius: 20px;
-            padding: 24px;
+            padding: 16px;
             margin-bottom: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
@@ -201,7 +201,7 @@
         .gauge-container {
             position: relative;
             width: 100%;
-            max-width: 280px;
+            max-width: 200px;
             margin: 0 auto;
         }
 
@@ -810,6 +810,344 @@
             font-size: 0.85rem;
             color: #a8d8ea;
         }
+
+        /* Cycle Tracking Styles */
+        .cycle-card {
+            background: linear-gradient(145deg, #2d1f3d 0%, #1a1a40 100%);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border-left: 4px solid #e879f9;
+        }
+
+        .cycle-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .cycle-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .cycle-settings-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .cycle-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin-bottom: 16px;
+        }
+
+        .cycle-day {
+            text-align: center;
+        }
+
+        .cycle-day-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #e879f9;
+        }
+
+        .cycle-day-label {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .cycle-phase {
+            text-align: center;
+            padding: 12px 16px;
+            background: rgba(232, 121, 249, 0.15);
+            border-radius: 12px;
+        }
+
+        .cycle-phase-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #e879f9;
+            margin-bottom: 4px;
+        }
+
+        .cycle-phase-desc {
+            font-size: 0.75rem;
+            color: #c8c8d8;
+        }
+
+        .cycle-timeline {
+            display: flex;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            background: #1a1a40;
+        }
+
+        .cycle-timeline-segment {
+            height: 100%;
+            transition: all 0.3s;
+        }
+
+        .cycle-timeline-segment.period { background: #f472b6; }
+        .cycle-timeline-segment.follicular { background: #a78bfa; }
+        .cycle-timeline-segment.ovulation { background: #34d399; }
+        .cycle-timeline-segment.luteal { background: #fbbf24; }
+        .cycle-timeline-segment.pms { background: #fb923c; }
+
+        .cycle-timeline-marker {
+            position: relative;
+            width: 3px;
+            background: #fff;
+            box-shadow: 0 0 4px rgba(255,255,255,0.5);
+        }
+
+        .cycle-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        .cycle-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .cycle-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .cycle-legend-dot.period { background: #f472b6; }
+        .cycle-legend-dot.follicular { background: #a78bfa; }
+        .cycle-legend-dot.ovulation { background: #34d399; }
+        .cycle-legend-dot.luteal { background: #fbbf24; }
+        .cycle-legend-dot.pms { background: #fb923c; }
+
+        .cycle-insight {
+            background: rgba(232, 121, 249, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 12px;
+            border: 1px solid rgba(232, 121, 249, 0.2);
+        }
+
+        .cycle-insight-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            color: #e879f9;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+        }
+
+        .cycle-insight-text {
+            font-size: 0.85rem;
+            color: #d8b4e2;
+            line-height: 1.5;
+        }
+
+        .cycle-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .cycle-action-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid rgba(232, 121, 249, 0.3);
+            border-radius: 10px;
+            background: rgba(232, 121, 249, 0.1);
+            color: #e879f9;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cycle-action-btn:hover {
+            background: rgba(232, 121, 249, 0.2);
+        }
+
+        .cycle-action-btn.primary {
+            background: #e879f9;
+            color: #1a1a2e;
+            border-color: #e879f9;
+            font-weight: 600;
+        }
+
+        /* Cycle Settings Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, #1a1a40 0%, #0f3460 100%);
+            border-radius: 20px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a40;
+            border: 1px solid #333;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #e879f9;
+        }
+
+        .form-help {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .modal-btn.secondary {
+            background: #333;
+            color: #888;
+        }
+
+        .modal-btn.primary {
+            background: #e879f9;
+            color: #1a1a2e;
+        }
+
+        /* Period Log in History */
+        .log-cycle-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #e879f9;
+            margin-bottom: 6px;
+        }
+
+        /* Correlation Section */
+        .cycle-correlation {
+            background: #1a1a40;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .cycle-correlation-title {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        .cycle-correlation-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .cycle-correlation-item:last-child {
+            border-bottom: none;
+        }
+
+        .cycle-correlation-phase {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cycle-correlation-bar {
+            height: 6px;
+            background: #e879f9;
+            border-radius: 3px;
+            min-width: 20px;
+        }
     </style>
 </head>
 <body>
@@ -859,6 +1197,76 @@
             </div>
             <div class="weather-forecast" id="weatherForecast"></div>
             <div id="rainAlerts"></div>
+        </div>
+
+        <!-- Cycle Tracking Card -->
+        <div class="cycle-card" id="cycleCard">
+            <div class="cycle-header">
+                <div class="cycle-title">
+                    <span>🌸</span>
+                    <span>Cycle Tracker</span>
+                </div>
+                <button class="cycle-settings-btn" onclick="openCycleSettings()">⚙️</button>
+            </div>
+            <div class="cycle-main">
+                <div class="cycle-day">
+                    <div class="cycle-day-value" id="cycleDay">--</div>
+                    <div class="cycle-day-label">Day of Cycle</div>
+                </div>
+                <div class="cycle-phase" id="cyclePhaseBox">
+                    <div class="cycle-phase-name" id="cyclePhaseName">--</div>
+                    <div class="cycle-phase-desc" id="cyclePhaseDesc">Loading...</div>
+                </div>
+            </div>
+            <div class="cycle-timeline" id="cycleTimeline"></div>
+            <div class="cycle-legend">
+                <div class="cycle-legend-item"><div class="cycle-legend-dot period"></div> Period</div>
+                <div class="cycle-legend-item"><div class="cycle-legend-dot follicular"></div> Follicular</div>
+                <div class="cycle-legend-item"><div class="cycle-legend-dot ovulation"></div> Ovulation</div>
+                <div class="cycle-legend-item"><div class="cycle-legend-dot luteal"></div> Luteal</div>
+                <div class="cycle-legend-item"><div class="cycle-legend-dot pms"></div> PMS</div>
+            </div>
+            <div class="cycle-insight" id="cycleInsight">
+                <div class="cycle-insight-header">
+                    💡 Cycle Insight
+                </div>
+                <div class="cycle-insight-text" id="cycleInsightText">
+                    Loading cycle information...
+                </div>
+            </div>
+            <div class="cycle-actions">
+                <button class="cycle-action-btn" onclick="logPeriodStart()">🔴 Period Started</button>
+                <button class="cycle-action-btn" onclick="logPeriodEnd()">⚪ Period Ended</button>
+            </div>
+        </div>
+
+        <!-- Cycle Settings Modal -->
+        <div class="modal-overlay" id="cycleModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span class="modal-title">Cycle Settings</span>
+                    <button class="modal-close" onclick="closeCycleSettings()">×</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Period Start Date</label>
+                    <input type="date" class="form-input" id="lastPeriodInput">
+                    <div class="form-help">When did your most recent period begin?</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Average Cycle Length (days)</label>
+                    <input type="number" class="form-input" id="cycleLengthInput" min="21" max="45" value="28">
+                    <div class="form-help">Typical range is 21-35 days. This will auto-adjust over time.</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Average Period Length (days)</label>
+                    <input type="number" class="form-input" id="periodLengthInput" min="2" max="10" value="5">
+                    <div class="form-help">How many days does your period typically last?</div>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn secondary" onclick="closeCycleSettings()">Cancel</button>
+                    <button class="modal-btn primary" onclick="saveCycleSettings()">Save</button>
+                </div>
+            </div>
         </div>
 
         <!-- Pressure Gauge -->
@@ -963,6 +1371,12 @@
                 <div id="pressureRanges"></div>
             </div>
 
+            <!-- Cycle Correlation -->
+            <div class="cycle-correlation" id="cycleCorrelation">
+                <div class="cycle-correlation-title">Headaches by Cycle Phase</div>
+                <div id="cyclePhaseStats"></div>
+            </div>
+
             <!-- Personal Pattern Insights -->
             <div class="insights-interpretation">
                 <h3>🔍 Your Personal Patterns</h3>
@@ -985,6 +1399,351 @@
         let currentLocation = { name: 'Lakeland, FL', lat: 28.0395, lon: -81.9498, zip: '33813' };
         let selectedSeverity = null;
         let logs = JSON.parse(localStorage.getItem('headacheLogs') || '[]');
+
+        // Cycle Tracking State
+        let cycleData = JSON.parse(localStorage.getItem('cycleData') || JSON.stringify({
+            periods: [], // Array of { start: ISO date, end: ISO date (optional) }
+            settings: {
+                avgCycleLength: 28,
+                avgPeriodLength: 5,
+                lastPeriodStart: '2025-12-31' // User's provided date
+            }
+        }));
+
+        // Initialize with user's data if first time
+        if (cycleData.periods.length === 0 && cycleData.settings.lastPeriodStart) {
+            cycleData.periods.push({ start: cycleData.settings.lastPeriodStart });
+            saveCycleData();
+        }
+
+        function saveCycleData() {
+            localStorage.setItem('cycleData', JSON.stringify(cycleData));
+        }
+
+        // Calculate current cycle day and phase
+        function getCycleInfo() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Get the most recent period start
+            let lastPeriodStart = null;
+            if (cycleData.periods.length > 0) {
+                // Sort periods by start date descending
+                const sortedPeriods = [...cycleData.periods].sort((a, b) =>
+                    new Date(b.start) - new Date(a.start)
+                );
+                lastPeriodStart = new Date(sortedPeriods[0].start);
+            } else if (cycleData.settings.lastPeriodStart) {
+                lastPeriodStart = new Date(cycleData.settings.lastPeriodStart);
+            }
+
+            if (!lastPeriodStart) {
+                return null;
+            }
+
+            lastPeriodStart.setHours(0, 0, 0, 0);
+
+            // Calculate cycle day
+            const daysSinceLastPeriod = Math.floor((today - lastPeriodStart) / (1000 * 60 * 60 * 24)) + 1;
+
+            // Auto-adjust cycle length based on history
+            let avgCycleLength = cycleData.settings.avgCycleLength;
+            if (cycleData.periods.length >= 2) {
+                const cycleLengths = [];
+                const sortedPeriods = [...cycleData.periods].sort((a, b) =>
+                    new Date(a.start) - new Date(b.start)
+                );
+                for (let i = 1; i < sortedPeriods.length; i++) {
+                    const diff = Math.floor((new Date(sortedPeriods[i].start) - new Date(sortedPeriods[i-1].start)) / (1000 * 60 * 60 * 24));
+                    if (diff >= 21 && diff <= 45) { // Valid cycle range
+                        cycleLengths.push(diff);
+                    }
+                }
+                if (cycleLengths.length > 0) {
+                    avgCycleLength = Math.round(cycleLengths.reduce((a, b) => a + b, 0) / cycleLengths.length);
+                    cycleData.settings.avgCycleLength = avgCycleLength;
+                    saveCycleData();
+                }
+            }
+
+            const periodLength = cycleData.settings.avgPeriodLength;
+
+            // Determine phase
+            let phase, phaseName, phaseDesc;
+            const cycleDay = ((daysSinceLastPeriod - 1) % avgCycleLength) + 1;
+            const ovulationDay = Math.round(avgCycleLength - 14); // Ovulation typically 14 days before next period
+            const pmsStart = avgCycleLength - 7; // PMS typically starts ~7 days before period
+
+            if (cycleDay <= periodLength) {
+                phase = 'period';
+                phaseName = 'Period';
+                phaseDesc = `Day ${cycleDay} of ${periodLength}`;
+            } else if (cycleDay <= ovulationDay - 2) {
+                phase = 'follicular';
+                phaseName = 'Follicular';
+                phaseDesc = 'Energy rising';
+            } else if (cycleDay <= ovulationDay + 2) {
+                phase = 'ovulation';
+                phaseName = 'Ovulation';
+                phaseDesc = 'Peak fertility window';
+            } else if (cycleDay < pmsStart) {
+                phase = 'luteal';
+                phaseName = 'Luteal';
+                phaseDesc = 'Post-ovulation';
+            } else {
+                phase = 'pms';
+                phaseName = 'PMS';
+                phaseDesc = `${avgCycleLength - cycleDay + 1} days to period`;
+            }
+
+            // Calculate next period prediction
+            const daysUntilNextPeriod = avgCycleLength - cycleDay + 1;
+            const nextPeriodDate = new Date(today);
+            nextPeriodDate.setDate(nextPeriodDate.getDate() + daysUntilNextPeriod);
+
+            // Calculate when PMS starts
+            const daysUntilPMS = pmsStart - cycleDay;
+
+            return {
+                cycleDay,
+                phase,
+                phaseName,
+                phaseDesc,
+                avgCycleLength,
+                periodLength,
+                ovulationDay,
+                pmsStart,
+                daysUntilNextPeriod,
+                daysUntilPMS,
+                nextPeriodDate,
+                lastPeriodStart,
+                daysSinceLastPeriod
+            };
+        }
+
+        function updateCycleDisplay() {
+            const info = getCycleInfo();
+
+            if (!info) {
+                document.getElementById('cycleDay').textContent = '--';
+                document.getElementById('cyclePhaseName').textContent = 'Not Set';
+                document.getElementById('cyclePhaseDesc').textContent = 'Configure in settings';
+                return;
+            }
+
+            // Update main display
+            document.getElementById('cycleDay').textContent = info.cycleDay;
+            document.getElementById('cyclePhaseName').textContent = info.phaseName;
+            document.getElementById('cyclePhaseDesc').textContent = info.phaseDesc;
+
+            // Update phase box color
+            const phaseBox = document.getElementById('cyclePhaseBox');
+            phaseBox.style.background = getPhaseColor(info.phase, 0.15);
+            document.getElementById('cyclePhaseName').style.color = getPhaseColor(info.phase, 1);
+
+            // Update timeline
+            updateCycleTimeline(info);
+
+            // Update insight
+            updateCycleInsight(info);
+        }
+
+        function getPhaseColor(phase, opacity) {
+            const colors = {
+                period: `rgba(244, 114, 182, ${opacity})`,
+                follicular: `rgba(167, 139, 250, ${opacity})`,
+                ovulation: `rgba(52, 211, 153, ${opacity})`,
+                luteal: `rgba(251, 191, 36, ${opacity})`,
+                pms: `rgba(251, 146, 60, ${opacity})`
+            };
+            return colors[phase] || colors.follicular;
+        }
+
+        function updateCycleTimeline(info) {
+            const timeline = document.getElementById('cycleTimeline');
+            const { avgCycleLength, periodLength, ovulationDay, pmsStart, cycleDay } = info;
+
+            // Calculate segment widths as percentages
+            const periodPct = (periodLength / avgCycleLength) * 100;
+            const follicularPct = ((ovulationDay - 2 - periodLength) / avgCycleLength) * 100;
+            const ovulationPct = (5 / avgCycleLength) * 100; // ~5 day window
+            const lutealPct = ((pmsStart - ovulationDay - 2) / avgCycleLength) * 100;
+            const pmsPct = ((avgCycleLength - pmsStart + 1) / avgCycleLength) * 100;
+
+            // Current position marker
+            const markerPosition = ((cycleDay - 0.5) / avgCycleLength) * 100;
+
+            timeline.innerHTML = `
+                <div class="cycle-timeline-segment period" style="width: ${periodPct}%"></div>
+                <div class="cycle-timeline-segment follicular" style="width: ${follicularPct}%"></div>
+                <div class="cycle-timeline-segment ovulation" style="width: ${ovulationPct}%"></div>
+                <div class="cycle-timeline-segment luteal" style="width: ${lutealPct}%"></div>
+                <div class="cycle-timeline-segment pms" style="width: ${pmsPct}%"></div>
+                <div class="cycle-timeline-marker" style="position: absolute; left: ${markerPosition}%; top: 0; height: 100%;"></div>
+            `;
+            timeline.style.position = 'relative';
+        }
+
+        function updateCycleInsight(info) {
+            const insightText = document.getElementById('cycleInsightText');
+            let insight = '';
+
+            // Check if cycle is unusually long
+            if (info.daysSinceLastPeriod > info.avgCycleLength + 7) {
+                insight = `Your cycle is longer than usual (Day ${info.daysSinceLastPeriod}). This can happen due to stress, travel, or natural variation. Consider logging when your period starts to help track patterns.`;
+            } else if (info.phase === 'pms') {
+                insight = `You're in your <strong>PMS phase</strong> - headaches are more likely now. Your period is expected in ~${info.daysUntilNextPeriod} days (around ${info.nextPeriodDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}). Stay hydrated and consider preemptive care.`;
+            } else if (info.phase === 'period') {
+                insight = `You're on your <strong>period</strong>. Hormonal headaches often occur during the first few days. Take it easy and track any headaches to identify patterns.`;
+            } else if (info.daysUntilPMS <= 3 && info.daysUntilPMS > 0) {
+                insight = `<strong>PMS is approaching</strong> in ${info.daysUntilPMS} days. This is when many experience increased headaches. Consider preparing with extra rest and hydration.`;
+            } else if (info.phase === 'ovulation') {
+                insight = `You're near <strong>ovulation</strong>. Some people experience headaches around this time due to estrogen fluctuations. Your next period is ~${info.daysUntilNextPeriod} days away.`;
+            } else {
+                insight = `You're in your <strong>${info.phaseName.toLowerCase()} phase</strong>. Next period expected around ${info.nextPeriodDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}. PMS may begin in ~${info.daysUntilPMS} days.`;
+            }
+
+            insightText.innerHTML = insight;
+        }
+
+        function openCycleSettings() {
+            const modal = document.getElementById('cycleModal');
+            modal.classList.add('active');
+
+            // Populate current values
+            document.getElementById('lastPeriodInput').value = cycleData.settings.lastPeriodStart || '';
+            document.getElementById('cycleLengthInput').value = cycleData.settings.avgCycleLength;
+            document.getElementById('periodLengthInput').value = cycleData.settings.avgPeriodLength;
+        }
+
+        function closeCycleSettings() {
+            document.getElementById('cycleModal').classList.remove('active');
+        }
+
+        function saveCycleSettings() {
+            const lastPeriod = document.getElementById('lastPeriodInput').value;
+            const cycleLength = parseInt(document.getElementById('cycleLengthInput').value);
+            const periodLength = parseInt(document.getElementById('periodLengthInput').value);
+
+            if (lastPeriod) {
+                cycleData.settings.lastPeriodStart = lastPeriod;
+                // Add to periods array if not already there
+                const exists = cycleData.periods.some(p => p.start === lastPeriod);
+                if (!exists) {
+                    cycleData.periods.push({ start: lastPeriod });
+                }
+            }
+
+            if (cycleLength >= 21 && cycleLength <= 45) {
+                cycleData.settings.avgCycleLength = cycleLength;
+            }
+
+            if (periodLength >= 2 && periodLength <= 10) {
+                cycleData.settings.avgPeriodLength = periodLength;
+            }
+
+            saveCycleData();
+            updateCycleDisplay();
+            closeCycleSettings();
+        }
+
+        function logPeriodStart() {
+            const today = new Date().toISOString().split('T')[0];
+
+            // Check if already logged today
+            const existsToday = cycleData.periods.some(p => p.start === today);
+            if (existsToday) {
+                alert('Period already logged for today!');
+                return;
+            }
+
+            cycleData.periods.push({ start: today });
+            cycleData.settings.lastPeriodStart = today;
+            saveCycleData();
+            updateCycleDisplay();
+
+            // Visual feedback
+            alert('Period start logged! Your cycle data will update automatically.');
+        }
+
+        function logPeriodEnd() {
+            const today = new Date().toISOString().split('T')[0];
+
+            // Find the most recent period without an end date
+            const sortedPeriods = [...cycleData.periods].sort((a, b) =>
+                new Date(b.start) - new Date(a.start)
+            );
+
+            const currentPeriod = sortedPeriods.find(p => !p.end);
+            if (currentPeriod) {
+                currentPeriod.end = today;
+
+                // Update average period length
+                const periodsWithEnd = cycleData.periods.filter(p => p.end);
+                if (periodsWithEnd.length > 0) {
+                    const lengths = periodsWithEnd.map(p => {
+                        const start = new Date(p.start);
+                        const end = new Date(p.end);
+                        return Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                    });
+                    cycleData.settings.avgPeriodLength = Math.round(lengths.reduce((a, b) => a + b, 0) / lengths.length);
+                }
+
+                saveCycleData();
+                updateCycleDisplay();
+                alert('Period end logged!');
+            } else {
+                alert('No active period found. Log a period start first.');
+            }
+        }
+
+        // Get cycle phase for a given date
+        function getCyclePhaseForDate(date) {
+            const targetDate = new Date(date);
+            targetDate.setHours(0, 0, 0, 0);
+
+            // Find the period that started before this date
+            const sortedPeriods = [...cycleData.periods].sort((a, b) =>
+                new Date(a.start) - new Date(b.start)
+            );
+
+            let relevantPeriod = null;
+            for (const period of sortedPeriods) {
+                const periodStart = new Date(period.start);
+                if (periodStart <= targetDate) {
+                    relevantPeriod = period;
+                } else {
+                    break;
+                }
+            }
+
+            if (!relevantPeriod) {
+                return null;
+            }
+
+            const periodStart = new Date(relevantPeriod.start);
+            periodStart.setHours(0, 0, 0, 0);
+            const daysSincePeriod = Math.floor((targetDate - periodStart) / (1000 * 60 * 60 * 24)) + 1;
+
+            const avgCycleLength = cycleData.settings.avgCycleLength;
+            const periodLength = cycleData.settings.avgPeriodLength;
+            const ovulationDay = Math.round(avgCycleLength - 14);
+            const pmsStart = avgCycleLength - 7;
+
+            const cycleDay = ((daysSincePeriod - 1) % avgCycleLength) + 1;
+
+            if (cycleDay <= periodLength) {
+                return 'period';
+            } else if (cycleDay <= ovulationDay - 2) {
+                return 'follicular';
+            } else if (cycleDay <= ovulationDay + 2) {
+                return 'ovulation';
+            } else if (cycleDay < pmsStart) {
+                return 'luteal';
+            } else {
+                return 'pms';
+            }
+        }
 
         // Weather code to description and icon mapping
         function getWeatherInfo(code) {
@@ -1594,6 +2353,9 @@
                 return;
             }
 
+            // Get current cycle info
+            const cycleInfo = getCycleInfo();
+
             const log = {
                 id: Date.now(),
                 timestamp: new Date().toISOString(),
@@ -1603,7 +2365,11 @@
                 trendDescription: getTrendDescription(),
                 severity: selectedSeverity,
                 notes: document.getElementById('notesInput').value.trim(),
-                location: currentLocation.name
+                location: currentLocation.name,
+                // Add cycle data
+                cycleDay: cycleInfo ? cycleInfo.cycleDay : null,
+                cyclePhase: cycleInfo ? cycleInfo.phase : null,
+                cyclePhaseName: cycleInfo ? cycleInfo.phaseName : null
             };
 
             logs.unshift(log);
@@ -1645,6 +2411,12 @@
                 const trendIcon = log.trend && log.trend.includes('rising') ? '📈' :
                                  log.trend && log.trend.includes('falling') ? '📉' : '➡️';
 
+                // Cycle phase info
+                const cyclePhaseIcon = log.cyclePhase === 'period' ? '🔴' :
+                                      log.cyclePhase === 'pms' ? '🟠' :
+                                      log.cyclePhase === 'ovulation' ? '🟢' :
+                                      log.cyclePhase ? '🟣' : '';
+
                 return `
                     <div class="log-entry">
                         <div class="log-header">
@@ -1660,6 +2432,7 @@
                         <div class="log-trend">
                             ${trendIcon} ${log.trendDescription || log.trend}
                         </div>
+                        ${log.cyclePhase ? `<div class="log-cycle-info">${cyclePhaseIcon} Day ${log.cycleDay} - ${log.cyclePhaseName}</div>` : ''}
                         <div class="log-location">📍 ${log.location}</div>
                         ${log.notes ? `<div class="log-notes">"${log.notes}"</div>` : ''}
                     </div>
@@ -1732,7 +2505,68 @@
                 </div>
             `).join('');
 
+            // Update cycle phase correlation
+            updateCycleCorrelation();
+
             updatePersonalInsights();
+        }
+
+        function updateCycleCorrelation() {
+            const container = document.getElementById('cyclePhaseStats');
+            if (!container) return;
+
+            // Count headaches by cycle phase
+            const phaseCounts = {
+                period: { count: 0, severe: 0, label: 'Period', color: '#f472b6' },
+                follicular: { count: 0, severe: 0, label: 'Follicular', color: '#a78bfa' },
+                ovulation: { count: 0, severe: 0, label: 'Ovulation', color: '#34d399' },
+                luteal: { count: 0, severe: 0, label: 'Luteal', color: '#fbbf24' },
+                pms: { count: 0, severe: 0, label: 'PMS', color: '#fb923c' }
+            };
+
+            // Also try to retroactively calculate phase for older logs
+            logs.forEach(log => {
+                let phase = log.cyclePhase;
+
+                // If no phase stored, try to calculate it
+                if (!phase && log.timestamp) {
+                    phase = getCyclePhaseForDate(log.timestamp);
+                }
+
+                if (phase && phaseCounts[phase]) {
+                    phaseCounts[phase].count++;
+                    if (log.severity === 'severe') {
+                        phaseCounts[phase].severe++;
+                    }
+                }
+            });
+
+            const totalWithPhase = Object.values(phaseCounts).reduce((sum, p) => sum + p.count, 0);
+
+            if (totalWithPhase === 0) {
+                container.innerHTML = '<div style="color: #666; font-size: 0.85rem;">Log headaches to see cycle correlations</div>';
+                return;
+            }
+
+            const maxCount = Math.max(...Object.values(phaseCounts).map(p => p.count), 1);
+
+            container.innerHTML = Object.entries(phaseCounts).map(([phase, data]) => {
+                const barWidth = (data.count / maxCount) * 100;
+                const pct = totalWithPhase > 0 ? Math.round((data.count / totalWithPhase) * 100) : 0;
+
+                return `
+                    <div class="cycle-correlation-item">
+                        <div class="cycle-correlation-phase">
+                            <div class="cycle-legend-dot ${phase}"></div>
+                            <span>${data.label}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="cycle-correlation-bar" style="width: ${barWidth}px; background: ${data.color};"></div>
+                            <span style="color: #888; font-size: 0.8rem;">${data.count} (${pct}%)</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function updatePersonalInsights() {
@@ -1815,7 +2649,71 @@
                 }
             }
 
+            // Add cycle-related insights
+            const cycleInsights = getCycleInsights();
+            if (cycleInsights) {
+                insights.push(cycleInsights);
+            }
+
             el.innerHTML = insights.join('') || '<p>Keep logging to refine your personal pattern analysis.</p>';
+        }
+
+        function getCycleInsights() {
+            // Count headaches by cycle phase
+            const phaseCounts = { period: 0, follicular: 0, ovulation: 0, luteal: 0, pms: 0 };
+            const phaseSevere = { period: 0, follicular: 0, ovulation: 0, luteal: 0, pms: 0 };
+
+            logs.forEach(log => {
+                let phase = log.cyclePhase;
+                if (!phase && log.timestamp) {
+                    phase = getCyclePhaseForDate(log.timestamp);
+                }
+                if (phase && phaseCounts.hasOwnProperty(phase)) {
+                    phaseCounts[phase]++;
+                    if (log.severity === 'severe') {
+                        phaseSevere[phase]++;
+                    }
+                }
+            });
+
+            const totalWithPhase = Object.values(phaseCounts).reduce((sum, c) => sum + c, 0);
+            if (totalWithPhase < 3) {
+                return null;
+            }
+
+            // Find the most problematic phase
+            const sortedPhases = Object.entries(phaseCounts).sort((a, b) => b[1] - a[1]);
+            const topPhase = sortedPhases[0];
+            const topPhasePct = Math.round((topPhase[1] / totalWithPhase) * 100);
+
+            // Check for PMS/Period correlation (common pattern)
+            const hormonalCount = phaseCounts.pms + phaseCounts.period;
+            const hormonalPct = Math.round((hormonalCount / totalWithPhase) * 100);
+
+            let insight = '';
+
+            if (hormonalPct >= 50) {
+                insight = `<p><span class="insight-trigger" style="color: #e879f9;">🌸 Strong hormonal pattern detected:</span> ${hormonalPct}% of your headaches occur during PMS or your period. This suggests hormonal fluctuations are a significant trigger. Consider tracking symptoms and discussing hormonal migraine management with your doctor.</p>`;
+            } else if (topPhasePct >= 40 && (topPhase[0] === 'pms' || topPhase[0] === 'period')) {
+                const phaseName = topPhase[0] === 'pms' ? 'PMS' : 'your period';
+                insight = `<p><span class="insight-trigger" style="color: #e879f9;">🌸 Cycle correlation found:</span> ${topPhasePct}% of your headaches occur during ${phaseName}. Planning preventive care before this phase may help reduce headache frequency.</p>`;
+            } else if (topPhasePct >= 35) {
+                const phaseLabels = { period: 'your period', follicular: 'the follicular phase', ovulation: 'ovulation', luteal: 'the luteal phase', pms: 'PMS' };
+                insight = `<p><span class="insight-stat" style="color: #e879f9;">🌸 Cycle pattern:</span> ${topPhasePct}% of your headaches cluster during ${phaseLabels[topPhase[0]]}. Continue logging to confirm this pattern.</p>`;
+            }
+
+            // Check if severe headaches cluster in a specific phase
+            const totalSevere = Object.values(phaseSevere).reduce((sum, c) => sum + c, 0);
+            if (totalSevere >= 2) {
+                const sortedSevere = Object.entries(phaseSevere).sort((a, b) => b[1] - a[1]);
+                const topSevere = sortedSevere[0];
+                if (topSevere[1] >= totalSevere * 0.5) {
+                    const phaseLabels = { period: 'your period', follicular: 'the follicular phase', ovulation: 'ovulation', luteal: 'the luteal phase', pms: 'PMS' };
+                    insight += `<p>Your <span class="insight-stat" style="color: #f472b6;">most severe headaches</span> tend to occur during ${phaseLabels[topSevere[0]]}. Extra preparation during this phase is recommended.</p>`;
+                }
+            }
+
+            return insight || null;
         }
 
         async function refreshPressure() {
@@ -1852,6 +2750,7 @@
 
             renderLogs();
             updateStats();
+            updateCycleDisplay();
         }
 
         if ('serviceWorker' in navigator) {
