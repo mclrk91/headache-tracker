@@ -10,6 +10,11 @@
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%231a1a2e'/><circle cx='96' cy='80' r='45' fill='none' stroke='%234cc9f0' stroke-width='6'/><circle cx='96' cy='80' r='8' fill='%23f72585'/><text x='96' y='165' font-family='Arial' font-size='24' font-weight='bold' fill='%234cc9f0' text-anchor='middle'>inHg</text></svg>">
     <link rel="manifest" href="manifest.json">
     <title>Headache Tracker</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -1249,37 +1254,11 @@
         <!-- Sync Status Bar -->
         <div class="sync-bar" id="syncBar">
             <div class="sync-status">
-                <span id="syncStatusText">💾 Backup & Restore</span>
+                <div class="sync-dot" id="syncDot"></div>
+                <span id="syncStatusText">Connecting...</span>
             </div>
             <div class="sync-actions">
-                <button class="sync-btn" onclick="exportData()">📤 Export</button>
-                <button class="sync-btn" onclick="openImportModal()">📥 Import</button>
-            </div>
-        </div>
-
-        <!-- Import Modal -->
-        <div class="modal-overlay" id="syncModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <span class="modal-title">📥 Import Data</span>
-                    <button class="modal-close" onclick="closeSyncSettings()">×</button>
-                </div>
-                <div class="sync-setup-content">
-                    <div class="sync-instructions" id="syncInstructions">
-                        <p>Paste your exported data below to restore your headache logs and cycle data on this device.</p>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Paste exported data</label>
-                        <textarea class="form-input" id="importDataInput" placeholder="Paste your backup data here..." rows="5" style="font-family: monospace; font-size: 0.8rem;"></textarea>
-                    </div>
-                    <div class="sync-warning" id="importWarning">
-                        ⚠️ This will merge with your existing data. Duplicate entries will be skipped.
-                    </div>
-                </div>
-                <div class="modal-actions" id="syncModalActions">
-                    <button class="modal-btn secondary" onclick="closeSyncSettings()">Cancel</button>
-                    <button class="modal-btn primary" onclick="importData()">Import Data</button>
-                </div>
+                <button class="sync-btn" onclick="manualSync()">↻ Sync</button>
             </div>
         </div>
 
@@ -1539,7 +1518,27 @@
             }
         }));
 
-        // Export/Import - no cloud service needed
+        // ============ FIREBASE CONFIG ============
+        const firebaseConfig = {
+            apiKey: "AIzaSyB4_QIVMhA7WgSZzLcyJSpCok5CZ7WQSX8",
+            authDomain: "headache-tracker-85a2e.firebaseapp.com",
+            projectId: "headache-tracker-85a2e",
+            storageBucket: "headache-tracker-85a2e.firebasestorage.app",
+            messagingSenderId: "199502307966",
+            appId: "1:199502307966:web:bb12a5842b3ce96c0dae2f"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Sync state
+        let userId = null;
+        let syncStatus = 'connecting';
+        let unsubscribeLogs = null;
+        let unsubscribeCycle = null;
+        let isInitialLoad = true;
 
         // Initialize with user's data if first time
         if (cycleData.periods.length === 0 && cycleData.settings.lastPeriodStart) {
@@ -1549,136 +1548,244 @@
 
         function saveCycleData() {
             localStorage.setItem('cycleData', JSON.stringify(cycleData));
-            scheduleSync();
+            syncCycleToCloud();
         }
 
-        // ============ EXPORT/IMPORT FUNCTIONS ============
+        // ============ FIREBASE SYNC FUNCTIONS ============
 
-        function exportData() {
-            const data = {
-                logs: logs,
-                cycleData: cycleData,
-                exportDate: new Date().toISOString(),
-                version: 1
-            };
+        function updateSyncUI() {
+            const dot = document.getElementById('syncDot');
+            const text = document.getElementById('syncStatusText');
 
-            const dataStr = JSON.stringify(data);
+            if (!dot || !text) return;
 
-            // Try to use share API on mobile, otherwise download
-            if (navigator.share && /mobile|android|iphone/i.test(navigator.userAgent)) {
-                navigator.share({
-                    title: 'Headache Tracker Backup',
-                    text: dataStr
-                }).catch(() => {
-                    // Fallback to copy
-                    copyToClipboard(dataStr);
-                });
-            } else {
-                // Copy to clipboard and also offer download
-                copyToClipboard(dataStr);
+            dot.className = 'sync-dot';
+
+            switch (syncStatus) {
+                case 'synced':
+                    dot.classList.add('synced');
+                    text.textContent = '☁️ Synced';
+                    break;
+                case 'syncing':
+                    dot.classList.add('syncing');
+                    text.textContent = '☁️ Syncing...';
+                    break;
+                case 'error':
+                    dot.classList.add('error');
+                    text.textContent = '⚠️ Sync error';
+                    break;
+                case 'offline':
+                    dot.classList.add('offline');
+                    text.textContent = '📴 Offline';
+                    break;
+                default:
+                    dot.classList.add('syncing');
+                    text.textContent = '☁️ Connecting...';
             }
         }
 
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert('✅ Data copied to clipboard!\n\nPaste this into a note, email it to yourself, or save it somewhere safe. Then paste it into the Import screen on your other device.');
-            }).catch(() => {
-                // Fallback: create a download file
-                downloadAsFile(text);
-            });
-        }
-
-        function downloadAsFile(text) {
-            const blob = new Blob([text], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `headache-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            alert('✅ Backup file downloaded!\n\nTransfer this file to your other device and import it there.');
-        }
-
-        function openImportModal() {
-            document.getElementById('syncModal').classList.add('active');
-            document.getElementById('importDataInput').value = '';
-        }
-
-        function closeSyncSettings() {
-            document.getElementById('syncModal').classList.remove('active');
-        }
-
-        function importData() {
-            const inputText = document.getElementById('importDataInput').value.trim();
-
-            if (!inputText) {
-                alert('Please paste your backup data first');
-                return;
-            }
-
+        // Sign in anonymously to get a unique user ID
+        async function initFirebaseAuth() {
             try {
-                const imported = JSON.parse(inputText);
+                // Check if we have a stored user ID (for persistence across sessions)
+                let storedUserId = localStorage.getItem('firebaseUserId');
 
-                if (!imported.logs && !imported.cycleData) {
-                    throw new Error('Invalid backup format');
-                }
-
-                // Merge logs
-                if (imported.logs && Array.isArray(imported.logs)) {
-                    const merged = new Map();
-                    logs.forEach(log => merged.set(log.id, log));
-                    imported.logs.forEach(log => {
-                        if (!merged.has(log.id)) {
-                            merged.set(log.id, log);
+                auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        localStorage.setItem('firebaseUserId', userId);
+                        console.log('Signed in with ID:', userId);
+                        syncStatus = 'syncing';
+                        updateSyncUI();
+                        await setupRealtimeSync();
+                    } else {
+                        // Sign in anonymously
+                        try {
+                            const result = await auth.signInAnonymously();
+                            userId = result.user.uid;
+                            localStorage.setItem('firebaseUserId', userId);
+                            console.log('New anonymous sign in:', userId);
+                        } catch (e) {
+                            console.error('Auth error:', e);
+                            syncStatus = 'error';
+                            updateSyncUI();
                         }
-                    });
-                    logs = Array.from(merged.values()).sort((a, b) =>
-                        new Date(b.timestamp) - new Date(a.timestamp)
-                    );
-                    localStorage.setItem('headacheLogs', JSON.stringify(logs));
-                }
+                    }
+                });
+            } catch (e) {
+                console.error('Firebase auth init error:', e);
+                syncStatus = 'error';
+                updateSyncUI();
+            }
+        }
 
-                // Merge cycle data
-                if (imported.cycleData) {
-                    const mergedPeriods = new Map();
-                    (cycleData.periods || []).forEach(p => mergedPeriods.set(p.start, p));
-                    (imported.cycleData.periods || []).forEach(p => {
-                        if (!mergedPeriods.has(p.start)) {
-                            mergedPeriods.set(p.start, p);
-                        }
-                    });
-                    cycleData.periods = Array.from(mergedPeriods.values()).sort((a, b) =>
-                        new Date(a.start) - new Date(b.start)
-                    );
+        // Set up real-time listeners
+        async function setupRealtimeSync() {
+            if (!userId) return;
 
-                    // Use imported settings if we have no periods logged
-                    if (cycleData.periods.length === 0 && imported.cycleData.settings) {
-                        cycleData.settings = imported.cycleData.settings;
+            // First, upload any local data that might not be in cloud
+            await uploadLocalData();
+
+            // Listen for headache logs changes
+            unsubscribeLogs = db.collection('users').doc(userId).collection('logs')
+                .orderBy('timestamp', 'desc')
+                .onSnapshot((snapshot) => {
+                    if (isInitialLoad) {
+                        // On first load, merge cloud with local
+                        const cloudLogs = [];
+                        snapshot.forEach(doc => {
+                            cloudLogs.push({ id: doc.id, ...doc.data() });
+                        });
+
+                        // Merge: keep all unique logs
+                        const merged = new Map();
+                        logs.forEach(log => merged.set(String(log.id), log));
+                        cloudLogs.forEach(log => merged.set(String(log.id), log));
+
+                        logs = Array.from(merged.values()).sort((a, b) =>
+                            new Date(b.timestamp) - new Date(a.timestamp)
+                        );
+                        localStorage.setItem('headacheLogs', JSON.stringify(logs));
+                        isInitialLoad = false;
+                    } else {
+                        // On subsequent updates, cloud is source of truth
+                        const cloudLogs = [];
+                        snapshot.forEach(doc => {
+                            cloudLogs.push({ id: doc.id, ...doc.data() });
+                        });
+                        logs = cloudLogs.sort((a, b) =>
+                            new Date(b.timestamp) - new Date(a.timestamp)
+                        );
+                        localStorage.setItem('headacheLogs', JSON.stringify(logs));
                     }
 
-                    localStorage.setItem('cycleData', JSON.stringify(cycleData));
+                    renderLogs();
+                    updateStats();
+                    syncStatus = 'synced';
+                    updateSyncUI();
+                }, (error) => {
+                    console.error('Logs sync error:', error);
+                    syncStatus = 'error';
+                    updateSyncUI();
+                });
+
+            // Listen for cycle data changes
+            unsubscribeCycle = db.collection('users').doc(userId).doc('cycleData')
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const cloudCycle = doc.data();
+                        // Merge periods
+                        const mergedPeriods = new Map();
+                        (cycleData.periods || []).forEach(p => mergedPeriods.set(p.start, p));
+                        (cloudCycle.periods || []).forEach(p => mergedPeriods.set(p.start, p));
+
+                        cycleData.periods = Array.from(mergedPeriods.values()).sort((a, b) =>
+                            new Date(a.start) - new Date(b.start)
+                        );
+                        cycleData.settings = cloudCycle.settings || cycleData.settings;
+                        localStorage.setItem('cycleData', JSON.stringify(cycleData));
+                        updateCycleDisplay();
+                    }
+                    syncStatus = 'synced';
+                    updateSyncUI();
+                }, (error) => {
+                    console.error('Cycle sync error:', error);
+                });
+        }
+
+        // Upload local data to cloud (for first sync or recovery)
+        async function uploadLocalData() {
+            if (!userId) return;
+
+            try {
+                // Upload logs
+                const batch = db.batch();
+                for (const log of logs) {
+                    const logRef = db.collection('users').doc(userId).collection('logs').doc(String(log.id));
+                    batch.set(logRef, log, { merge: true });
                 }
+                await batch.commit();
 
-                // Refresh UI
-                renderLogs();
-                updateStats();
-                updateCycleDisplay();
+                // Upload cycle data
+                await db.collection('users').doc(userId).set({
+                    cycleData: cycleData
+                }, { merge: true });
 
-                closeSyncSettings();
-                alert('✅ Data imported successfully!');
-
+                console.log('Local data uploaded to cloud');
             } catch (e) {
-                console.error('Import failed:', e);
-                alert('❌ Import failed: ' + e.message + '\n\nMake sure you pasted the complete backup data.');
+                console.error('Upload error:', e);
             }
         }
 
-        // No-op functions for compatibility (scheduleSync was called from other places)
-        function scheduleSync() {
-            // No longer needed - data is saved to localStorage automatically
+        // Sync a single log to cloud
+        async function syncLogToCloud(log) {
+            if (!userId) return;
+
+            try {
+                await db.collection('users').doc(userId).collection('logs').doc(String(log.id)).set(log);
+            } catch (e) {
+                console.error('Log sync error:', e);
+                syncStatus = 'error';
+                updateSyncUI();
+            }
         }
+
+        // Delete a log from cloud
+        async function deleteLogFromCloud(logId) {
+            if (!userId) return;
+
+            try {
+                await db.collection('users').doc(userId).collection('logs').doc(String(logId)).delete();
+            } catch (e) {
+                console.error('Delete sync error:', e);
+            }
+        }
+
+        // Sync cycle data to cloud
+        async function syncCycleToCloud() {
+            if (!userId) return;
+
+            try {
+                await db.collection('users').doc(userId).set({
+                    cycleData: cycleData
+                }, { merge: true });
+            } catch (e) {
+                console.error('Cycle sync error:', e);
+            }
+        }
+
+        // Manual sync button
+        async function manualSync() {
+            syncStatus = 'syncing';
+            updateSyncUI();
+
+            try {
+                await uploadLocalData();
+                syncStatus = 'synced';
+            } catch (e) {
+                syncStatus = 'error';
+            }
+            updateSyncUI();
+        }
+
+        // For compatibility with old code
+        function scheduleSync() {
+            // Now handled by real-time sync
+        }
+
+        // Listen for online/offline
+        window.addEventListener('online', () => {
+            if (userId) {
+                syncStatus = 'syncing';
+                updateSyncUI();
+                manualSync();
+            }
+        });
+
+        window.addEventListener('offline', () => {
+            syncStatus = 'offline';
+            updateSyncUI();
+        });
 
         // Calculate current cycle day and phase
         function getCycleInfo() {
@@ -2655,7 +2762,7 @@
 
             logs.unshift(log);
             localStorage.setItem('headacheLogs', JSON.stringify(logs));
-            scheduleSync();
+            syncLogToCloud(log);
 
             hideLogForm();
             renderLogs();
@@ -2725,16 +2832,17 @@
         function deleteLog(id) {
             logs = logs.filter(l => l.id !== id);
             localStorage.setItem('headacheLogs', JSON.stringify(logs));
-            scheduleSync();
+            deleteLogFromCloud(id);
             renderLogs();
             updateStats();
         }
 
         function clearHistory() {
             if (confirm('Are you sure you want to delete all entries?')) {
+                // Delete all from cloud first
+                logs.forEach(log => deleteLogFromCloud(log.id));
                 logs = [];
                 localStorage.setItem('headacheLogs', JSON.stringify(logs));
-                scheduleSync();
                 renderLogs();
                 updateStats();
             }
@@ -3035,6 +3143,10 @@
             renderLogs();
             updateStats();
             updateCycleDisplay();
+
+            // Initialize Firebase sync
+            updateSyncUI();
+            initFirebaseAuth();
         }
 
         if ('serviceWorker' in navigator) {
