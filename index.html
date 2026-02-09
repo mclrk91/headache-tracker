@@ -1863,18 +1863,20 @@
                 });
 
                 // Get the blob ID - try multiple methods due to CORS
-                let blobId = createResponse.headers.get('X-jsonblob-Id');
-                console.log('X-jsonblob-Id header:', blobId);
+                // Headers are case-insensitive but let's try variations
+                let blobId = createResponse.headers.get('x-jsonblob-id');
+                console.log('x-jsonblob-id header:', blobId);
 
                 if (!blobId) {
-                    const locationHeader = createResponse.headers.get('Location');
+                    const locationHeader = createResponse.headers.get('location');
+                    console.log('location header:', locationHeader);
                     blobId = locationHeader ? locationHeader.split('/').pop() : null;
                 }
 
                 if (!blobId) {
-                    // If headers not accessible, generate our own ID and use a different approach
-                    // Use the URL from the response if available
+                    // If headers not accessible, try to get from response URL
                     const responseUrl = createResponse.url;
+                    console.log('response URL:', responseUrl);
                     if (responseUrl && responseUrl.includes('/api/jsonBlob/')) {
                         blobId = responseUrl.split('/api/jsonBlob/').pop();
                     }
