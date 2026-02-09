@@ -1211,142 +1211,10 @@
             color: #4cc9f0;
         }
 
-        .sync-btn.link-btn {
+        .sync-btn.sign-in-btn {
             background: rgba(76, 201, 240, 0.15);
             border-color: #4cc9f0;
             color: #4cc9f0;
-        }
-
-        /* Sync Setup Modal */
-        .sync-setup-content {
-            text-align: center;
-        }
-
-        .sync-code-display {
-            background: #1a1a40;
-            border: 2px solid #4cc9f0;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 16px 0;
-            font-family: monospace;
-            font-size: 2rem;
-            font-weight: 700;
-            color: #4cc9f0;
-            letter-spacing: 4px;
-            user-select: all;
-        }
-
-        .sync-code-input {
-            background: #1a1a40;
-            border: 2px solid #333;
-            border-radius: 12px;
-            padding: 16px;
-            margin: 16px 0;
-            font-family: monospace;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #4cc9f0;
-            letter-spacing: 4px;
-            text-align: center;
-            text-transform: uppercase;
-            width: 100%;
-        }
-
-        .sync-code-input:focus {
-            outline: none;
-            border-color: #4cc9f0;
-        }
-
-        .sync-code-input::placeholder {
-            color: #555;
-            letter-spacing: 2px;
-        }
-
-        .sync-instructions {
-            font-size: 0.85rem;
-            color: #888;
-            line-height: 1.6;
-            margin-bottom: 16px;
-        }
-
-        .sync-section {
-            background: rgba(15, 52, 96, 0.5);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        .sync-section-title {
-            font-weight: 600;
-            color: #fff;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .sync-divider {
-            display: flex;
-            align-items: center;
-            margin: 20px 0;
-            color: #555;
-            font-size: 0.85rem;
-        }
-
-        .sync-divider::before,
-        .sync-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #333;
-        }
-
-        .sync-divider span {
-            padding: 0 12px;
-        }
-
-        .sync-success {
-            background: rgba(74, 222, 128, 0.1);
-            border: 1px solid rgba(74, 222, 128, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 0.85rem;
-            color: #4ade80;
-            margin: 16px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .sync-error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 0.85rem;
-            color: #ef4444;
-            margin: 16px 0;
-        }
-
-        .sync-warning {
-            background: rgba(251, 191, 36, 0.1);
-            border: 1px solid rgba(251, 191, 36, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 0.8rem;
-            color: #fbbf24;
-            margin-bottom: 16px;
-        }
-
-        .sync-linked-info {
-            background: rgba(74, 222, 128, 0.1);
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-size: 0.8rem;
-            color: #4ade80;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
     </style>
 </head>
@@ -1360,23 +1228,9 @@
                 <div class="sync-dot" id="syncDot"></div>
                 <span id="syncStatusText">Connecting...</span>
             </div>
-            <div class="sync-actions">
-                <button class="sync-btn link-btn" onclick="openLinkDevices()">🔗 Link</button>
+            <div class="sync-actions" id="syncActions">
+                <button class="sync-btn" id="signInBtn" onclick="signInWithGoogle()" style="display:none;">Sign In</button>
                 <button class="sync-btn" onclick="manualSync()">↻ Sync</button>
-            </div>
-        </div>
-
-        <!-- Link Devices Modal -->
-        <div class="modal-overlay" id="linkModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <span class="modal-title">🔗 Link Devices</span>
-                    <button class="modal-close" onclick="closeLinkDevices()">×</button>
-                </div>
-
-                <div id="linkModalContent">
-                    <!-- Linked status or linking options will be shown here -->
-                </div>
             </div>
         </div>
 
@@ -1702,42 +1556,44 @@
             }
         }
 
-        // Sync code for linking devices
-        let syncCode = localStorage.getItem('syncCode');
+        // Google Sign-In provider
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
 
-        // Generate a random 6-character sync code
-        function generateSyncCode() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed confusing chars like 0/O, 1/I
-            let code = '';
-            for (let i = 0; i < 6; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return code;
-        }
-
-        // Initialize Firebase and sync
+        // Initialize Firebase Auth with Google Sign-In
         async function initFirebaseAuth() {
             try {
-                // Check if we have a sync code (for cross-device sync)
-                syncCode = localStorage.getItem('syncCode');
+                // Listen for auth state changes
+                auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        // User is signed in
+                        userId = user.uid;
+                        console.log('Signed in as:', user.email, 'UID:', userId);
 
-                if (syncCode) {
-                    // We have a sync code - use it as our document ID
-                    userId = syncCode;
-                    console.log('Using sync code:', syncCode);
-                    syncStatus = 'syncing';
-                    updateSyncUI();
-                    await setupRealtimeSync();
-                } else {
-                    // No sync code yet - generate one for this device
-                    syncCode = generateSyncCode();
-                    localStorage.setItem('syncCode', syncCode);
-                    userId = syncCode;
-                    console.log('Generated new sync code:', syncCode);
-                    syncStatus = 'syncing';
-                    updateSyncUI();
-                    await setupRealtimeSync();
-                }
+                        // Update UI to show signed-in state
+                        const signInBtn = document.getElementById('signInBtn');
+                        if (signInBtn) {
+                            signInBtn.textContent = user.email.split('@')[0];
+                            signInBtn.onclick = signOut;
+                            signInBtn.style.display = 'inline-block';
+                        }
+
+                        syncStatus = 'syncing';
+                        updateSyncUI();
+                        await setupRealtimeSync();
+                    } else {
+                        // User is signed out - show sign in button
+                        userId = null;
+                        const signInBtn = document.getElementById('signInBtn');
+                        if (signInBtn) {
+                            signInBtn.textContent = '🔐 Sign In';
+                            signInBtn.onclick = signInWithGoogle;
+                            signInBtn.style.display = 'inline-block';
+                        }
+                        syncStatus = 'offline';
+                        updateSyncUI();
+                        document.getElementById('syncStatusText').textContent = 'Sign in to sync';
+                    }
+                });
             } catch (e) {
                 console.error('Firebase auth init error:', e);
                 syncStatus = 'error';
@@ -1745,149 +1601,47 @@
             }
         }
 
-        // Open link devices modal
-        function openLinkDevices() {
-            const modal = document.getElementById('linkModal');
-            const content = document.getElementById('linkModalContent');
-
-            content.innerHTML = `
-                <div class="sync-section">
-                    <div class="sync-section-title">📱 Your Sync Code</div>
-                    <div class="sync-instructions">
-                        Share this code with your other device to sync data between them.
-                    </div>
-                    <div class="sync-code-display" id="mySyncCode">${syncCode || 'Loading...'}</div>
-                    <button class="modal-btn primary" onclick="copySyncCode()" style="width: 100%;">
-                        📋 Copy Code
-                    </button>
-                </div>
-
-                <div class="sync-divider"><span>OR</span></div>
-
-                <div class="sync-section">
-                    <div class="sync-section-title">🔗 Link to Another Device</div>
-                    <div class="sync-instructions">
-                        Enter a sync code from another device to connect and share data.
-                    </div>
-                    <input type="text" class="sync-code-input" id="enterSyncCode"
-                           placeholder="ENTER CODE" maxlength="6"
-                           oninput="this.value = this.value.toUpperCase()">
-                    <div id="linkStatus"></div>
-                    <button class="modal-btn primary" onclick="linkToDevice()" style="width: 100%; margin-top: 12px;">
-                        🔗 Link Devices
-                    </button>
-                </div>
-
-                <div class="sync-warning">
-                    ⚠️ Linking will merge data from both devices. Your existing data will be preserved.
-                </div>
-            `;
-
-            modal.classList.add('active');
-        }
-
-        // Close link devices modal
-        function closeLinkDevices() {
-            const modal = document.getElementById('linkModal');
-            modal.classList.remove('active');
-        }
-
-        // Copy sync code to clipboard
-        async function copySyncCode() {
+        // Sign in with Google
+        async function signInWithGoogle() {
             try {
-                await navigator.clipboard.writeText(syncCode);
-                alert('Sync code copied! Share this with your other device.');
+                syncStatus = 'syncing';
+                updateSyncUI();
+                document.getElementById('syncStatusText').textContent = 'Signing in...';
+
+                // Use popup for sign-in
+                await auth.signInWithPopup(googleProvider);
+                // Auth state change will handle the rest
             } catch (e) {
-                // Fallback for older browsers
-                const el = document.getElementById('mySyncCode');
-                if (el) {
-                    const range = document.createRange();
-                    range.selectNode(el);
-                    window.getSelection().removeAllRanges();
-                    window.getSelection().addRange(range);
-                    document.execCommand('copy');
-                    window.getSelection().removeAllRanges();
-                    alert('Sync code copied! Share this with your other device.');
+                console.error('Sign in error:', e);
+                if (e.code === 'auth/popup-closed-by-user') {
+                    document.getElementById('syncStatusText').textContent = 'Sign in cancelled';
+                } else if (e.code === 'auth/popup-blocked') {
+                    // Try redirect instead
+                    try {
+                        await auth.signInWithRedirect(googleProvider);
+                    } catch (redirectError) {
+                        console.error('Redirect error:', redirectError);
+                        syncStatus = 'error';
+                        updateSyncUI();
+                    }
+                } else {
+                    syncStatus = 'error';
+                    updateSyncUI();
+                    alert('Sign in failed: ' + e.message);
                 }
             }
         }
 
-        // Link to another device using their sync code
-        async function linkToDevice() {
-            const input = document.getElementById('enterSyncCode');
-            const statusEl = document.getElementById('linkStatus');
-            const newCode = input.value.trim().toUpperCase();
-
-            if (!newCode || newCode.length !== 6) {
-                statusEl.innerHTML = '<div class="sync-error">Please enter a valid 6-character code</div>';
-                return;
-            }
-
-            if (newCode === syncCode) {
-                statusEl.innerHTML = '<div class="sync-error">That\'s already your current sync code!</div>';
-                return;
-            }
-
-            statusEl.innerHTML = '<div class="sync-instructions">Linking devices...</div>';
-
-            try {
-                // Check if the target sync code exists in Firestore
-                const targetDoc = await db.collection('users').doc(newCode).get();
-
-                // Save current local data before switching
-                const localLogs = [...logs];
-                const localCycleData = { ...cycleData };
-
-                // Update to new sync code
-                const oldCode = syncCode;
-                syncCode = newCode;
-                localStorage.setItem('syncCode', newCode);
-                userId = newCode;
-
-                // Unsubscribe from old listeners
-                if (unsubscribeLogs) unsubscribeLogs();
-                if (unsubscribeCycle) unsubscribeCycle();
-
-                // If target has data, we'll merge with it
-                // If not, we'll upload our data to it
-                isInitialLoad = true;
-
-                // Merge local data into the new sync location
-                if (localLogs.length > 0 || localCycleData.periods?.length > 0) {
-                    // Upload our local data to the new sync code
-                    const batch = db.batch();
-                    for (const log of localLogs) {
-                        const logRef = db.collection('users').doc(newCode).collection('logs').doc(String(log.id));
-                        batch.set(logRef, log, { merge: true });
-                    }
-                    await batch.commit();
-
-                    if (localCycleData.periods?.length > 0) {
-                        await db.collection('users').doc(newCode).set({
-                            cycleData: localCycleData
-                        }, { merge: true });
-                    }
+        // Sign out
+        async function signOut() {
+            if (confirm('Sign out? Your data will still be saved locally.')) {
+                try {
+                    if (unsubscribeLogs) unsubscribeLogs();
+                    if (unsubscribeCycle) unsubscribeCycle();
+                    await auth.signOut();
+                } catch (e) {
+                    console.error('Sign out error:', e);
                 }
-
-                // Set up real-time sync with new code
-                await setupRealtimeSync();
-
-                statusEl.innerHTML = `<div class="sync-success">✅ Devices linked successfully! Your data is now synced.</div>`;
-
-                // Update the displayed sync code
-                const codeDisplay = document.getElementById('mySyncCode');
-                if (codeDisplay) {
-                    codeDisplay.textContent = newCode;
-                }
-
-                // Close modal after a delay
-                setTimeout(() => {
-                    closeLinkDevices();
-                }, 2000);
-
-            } catch (e) {
-                console.error('Link error:', e);
-                statusEl.innerHTML = '<div class="sync-error">Failed to link devices. Please check the code and try again.</div>';
             }
         }
 
