@@ -1853,15 +1853,35 @@
                 });
 
                 if (!createResponse.ok) {
-                    throw new Error('Failed to create sync');
+                    throw new Error(`Failed to create sync: ${createResponse.status}`);
                 }
 
-                // Get the blob ID from the Location header
-                const locationHeader = createResponse.headers.get('Location');
-                const blobId = locationHeader ? locationHeader.split('/').pop() : null;
+                // Debug: log all headers
+                console.log('Response headers:');
+                createResponse.headers.forEach((value, key) => {
+                    console.log(`  ${key}: ${value}`);
+                });
+
+                // Get the blob ID - try multiple methods due to CORS
+                let blobId = createResponse.headers.get('X-jsonblob-Id');
+                console.log('X-jsonblob-Id header:', blobId);
 
                 if (!blobId) {
-                    throw new Error('Could not get sync ID');
+                    const locationHeader = createResponse.headers.get('Location');
+                    blobId = locationHeader ? locationHeader.split('/').pop() : null;
+                }
+
+                if (!blobId) {
+                    // If headers not accessible, generate our own ID and use a different approach
+                    // Use the URL from the response if available
+                    const responseUrl = createResponse.url;
+                    if (responseUrl && responseUrl.includes('/api/jsonBlob/')) {
+                        blobId = responseUrl.split('/api/jsonBlob/').pop();
+                    }
+                }
+
+                if (!blobId) {
+                    throw new Error('Could not get sync ID from response');
                 }
 
                 // The sync key is just the blobId (simple!)
@@ -1881,7 +1901,7 @@
 
             } catch (e) {
                 console.error('Setup failed:', e);
-                instructions.innerHTML = `<p style="color: #ef4444;">Setup failed: ${e.message}</p><p>Please try again.</p>`;
+                instructions.innerHTML = `<p style="color: #ef4444;">Setup failed: ${e.message}</p><p>Please try again.</p><p style="font-size: 0.7rem; color: #888; margin-top: 8px;">Check browser console for details</p>`;
             }
         }
 
