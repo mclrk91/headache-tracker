@@ -1541,8 +1541,8 @@
             }
         }));
 
-        // Cloud Sync State
-        const JSONBIN_API = 'https://api.jsonbin.io/v3';
+        // Cloud Sync State - using jsonblob.com (free, no API key needed)
+        const JSONBLOB_API = 'https://jsonblob.com/api/jsonBlob';
         let syncConfig = JSON.parse(localStorage.getItem('syncConfig') || 'null');
         let syncStatus = 'checking'; // checking, synced, syncing, error, offline, not-setup
         let lastSyncTime = null;
@@ -1619,7 +1619,7 @@
         }
 
         async function loadFromCloud() {
-            if (!syncConfig || !syncConfig.binId) {
+            if (!syncConfig || !syncConfig.blobId) {
                 syncStatus = 'not-setup';
                 updateSyncUI();
                 return;
@@ -1629,9 +1629,10 @@
             updateSyncUI();
 
             try {
-                const response = await fetch(`${JSONBIN_API}/b/${syncConfig.binId}/latest`, {
+                const response = await fetch(`${JSONBLOB_API}/${syncConfig.blobId}`, {
                     headers: {
-                        'X-Access-Key': syncConfig.apiKey
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     }
                 });
 
@@ -1639,8 +1640,7 @@
                     throw new Error('Failed to fetch from cloud');
                 }
 
-                const data = await response.json();
-                const cloudData = data.record;
+                const cloudData = await response.json();
 
                 // Merge cloud data with local (cloud wins for conflicts based on timestamp)
                 if (cloudData) {
@@ -1728,7 +1728,7 @@
         }
 
         async function saveToCloud() {
-            if (!syncConfig || !syncConfig.binId) return;
+            if (!syncConfig || !syncConfig.blobId) return;
 
             syncStatus = 'syncing';
             updateSyncUI();
@@ -1740,11 +1740,11 @@
                     lastModified: new Date().toISOString()
                 };
 
-                const response = await fetch(`${JSONBIN_API}/b/${syncConfig.binId}`, {
+                const response = await fetch(`${JSONBLOB_API}/${syncConfig.blobId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Access-Key': syncConfig.apiKey
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify(dataToSave)
                 });
@@ -1838,17 +1838,12 @@
             instructions.innerHTML = '<p>Creating your sync...</p>';
 
             try {
-                // Generate a random API key for this user
-                const apiKey = '$2a$10$' + generateRandomString(50);
-
-                // Create a new bin
-                const createResponse = await fetch(`${JSONBIN_API}/b`, {
+                // Create a new blob on jsonblob.com
+                const createResponse = await fetch(JSONBLOB_API, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Access-Key': apiKey,
-                        'X-Bin-Private': 'true',
-                        'X-Bin-Name': 'headache-tracker-data'
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({
                         logs: logs,
@@ -1861,14 +1856,19 @@
                     throw new Error('Failed to create sync');
                 }
 
-                const result = await createResponse.json();
-                const binId = result.metadata.id;
+                // Get the blob ID from the Location header
+                const locationHeader = createResponse.headers.get('Location');
+                const blobId = locationHeader ? locationHeader.split('/').pop() : null;
 
-                // Create sync key (binId:apiKey encoded)
-                const syncKey = btoa(`${binId}:${apiKey}`);
+                if (!blobId) {
+                    throw new Error('Could not get sync ID');
+                }
+
+                // The sync key is just the blobId (simple!)
+                const syncKey = blobId;
 
                 // Save config
-                syncConfig = { binId, apiKey, syncKey };
+                syncConfig = { blobId, syncKey };
                 localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
 
                 // Update UI
@@ -1894,18 +1894,13 @@
             }
 
             try {
-                // Decode the sync key
-                const decoded = atob(keyInput);
-                const [binId, apiKey] = decoded.split(':');
-
-                if (!binId || !apiKey) {
-                    throw new Error('Invalid sync key format');
-                }
+                // The sync key IS the blobId
+                const blobId = keyInput;
 
                 // Test the connection
-                const response = await fetch(`${JSONBIN_API}/b/${binId}/latest`, {
+                const response = await fetch(`${JSONBLOB_API}/${blobId}`, {
                     headers: {
-                        'X-Access-Key': apiKey
+                        'Accept': 'application/json'
                     }
                 });
 
@@ -1914,7 +1909,7 @@
                 }
 
                 // Save config
-                syncConfig = { binId, apiKey, syncKey: keyInput };
+                syncConfig = { blobId, syncKey: keyInput };
                 localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
 
                 // Load the data
@@ -1927,15 +1922,6 @@
                 console.error('Connect failed:', e);
                 alert('Failed to connect: ' + e.message);
             }
-        }
-
-        function generateRandomString(length) {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let result = '';
-            for (let i = 0; i < length; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return result;
         }
 
         // Listen for online/offline
