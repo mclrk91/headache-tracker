@@ -1148,11 +1148,142 @@
             border-radius: 3px;
             min-width: 20px;
         }
+
+        /* Sync Status Styles */
+        .sync-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(15, 52, 96, 0.5);
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 0.8rem;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #888;
+        }
+
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #888;
+        }
+
+        .sync-dot.synced { background: #4ade80; }
+        .sync-dot.syncing { background: #fbbf24; animation: pulse 1s infinite; }
+        .sync-dot.error { background: #ef4444; }
+        .sync-dot.offline { background: #888; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .sync-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .sync-btn {
+            background: none;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #888;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sync-btn:hover {
+            border-color: #4cc9f0;
+            color: #4cc9f0;
+        }
+
+        /* Sync Setup Modal */
+        .sync-setup-content {
+            text-align: center;
+        }
+
+        .sync-key-display {
+            background: #1a1a40;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: monospace;
+            font-size: 1.1rem;
+            color: #4cc9f0;
+            word-break: break-all;
+            user-select: all;
+        }
+
+        .sync-instructions {
+            font-size: 0.85rem;
+            color: #888;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .sync-warning {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.8rem;
+            color: #fbbf24;
+            margin-bottom: 16px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Headache Tracker</h1>
+
+        <!-- Sync Status Bar -->
+        <div class="sync-bar" id="syncBar">
+            <div class="sync-status">
+                <div class="sync-dot" id="syncDot"></div>
+                <span id="syncStatusText">Checking sync...</span>
+            </div>
+            <div class="sync-actions">
+                <button class="sync-btn" onclick="manualSync()">↻ Sync</button>
+                <button class="sync-btn" onclick="openSyncSettings()">⚙️</button>
+            </div>
+        </div>
+
+        <!-- Sync Setup Modal -->
+        <div class="modal-overlay" id="syncModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span class="modal-title">☁️ Cloud Sync</span>
+                    <button class="modal-close" onclick="closeSyncSettings()">×</button>
+                </div>
+                <div class="sync-setup-content">
+                    <div class="sync-instructions" id="syncInstructions">
+                        Loading...
+                    </div>
+                    <div class="sync-key-display" id="syncKeyDisplay" style="display: none;"></div>
+                    <div class="sync-warning" id="syncWarning" style="display: none;">
+                        ⚠️ Save this key! It's the only way to access your data on other devices.
+                    </div>
+                    <div class="form-group" id="syncKeyInput" style="display: none;">
+                        <label class="form-label">Enter your sync key</label>
+                        <input type="text" class="form-input" id="existingSyncKey" placeholder="Paste your sync key here">
+                    </div>
+                </div>
+                <div class="modal-actions" id="syncModalActions">
+                    <button class="modal-btn secondary" onclick="closeSyncSettings()">Cancel</button>
+                    <button class="modal-btn primary" id="syncPrimaryBtn" onclick="setupNewSync()">Create New Sync</button>
+                </div>
+            </div>
+        </div>
 
         <div class="pressure-card">
             <div class="pressure-main">
@@ -1410,6 +1541,12 @@
             }
         }));
 
+        // Cloud Sync State
+        const JSONBIN_API = 'https://api.jsonbin.io/v3';
+        let syncConfig = JSON.parse(localStorage.getItem('syncConfig') || 'null');
+        let syncStatus = 'checking'; // checking, synced, syncing, error, offline, not-setup
+        let lastSyncTime = null;
+
         // Initialize with user's data if first time
         if (cycleData.periods.length === 0 && cycleData.settings.lastPeriodStart) {
             cycleData.periods.push({ start: cycleData.settings.lastPeriodStart });
@@ -1418,7 +1555,398 @@
 
         function saveCycleData() {
             localStorage.setItem('cycleData', JSON.stringify(cycleData));
+            scheduleSync();
         }
+
+        // ============ CLOUD SYNC FUNCTIONS ============
+
+        function updateSyncUI() {
+            const dot = document.getElementById('syncDot');
+            const text = document.getElementById('syncStatusText');
+
+            dot.className = 'sync-dot';
+
+            switch (syncStatus) {
+                case 'synced':
+                    dot.classList.add('synced');
+                    text.textContent = lastSyncTime ? `Synced ${formatSyncTime(lastSyncTime)}` : 'Synced';
+                    break;
+                case 'syncing':
+                    dot.classList.add('syncing');
+                    text.textContent = 'Syncing...';
+                    break;
+                case 'error':
+                    dot.classList.add('error');
+                    text.textContent = 'Sync error';
+                    break;
+                case 'offline':
+                    dot.classList.add('offline');
+                    text.textContent = 'Offline';
+                    break;
+                case 'not-setup':
+                    dot.classList.add('offline');
+                    text.textContent = 'Tap ⚙️ to enable sync';
+                    break;
+                default:
+                    text.textContent = 'Checking...';
+            }
+        }
+
+        function formatSyncTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            if (diff < 60000) return 'just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+            return date.toLocaleDateString();
+        }
+
+        async function initSync() {
+            if (!syncConfig) {
+                syncStatus = 'not-setup';
+                updateSyncUI();
+                return;
+            }
+
+            // Try to load from cloud
+            try {
+                await loadFromCloud();
+            } catch (e) {
+                console.error('Initial sync failed:', e);
+                syncStatus = 'error';
+                updateSyncUI();
+            }
+        }
+
+        async function loadFromCloud() {
+            if (!syncConfig || !syncConfig.binId) {
+                syncStatus = 'not-setup';
+                updateSyncUI();
+                return;
+            }
+
+            syncStatus = 'syncing';
+            updateSyncUI();
+
+            try {
+                const response = await fetch(`${JSONBIN_API}/b/${syncConfig.binId}/latest`, {
+                    headers: {
+                        'X-Access-Key': syncConfig.apiKey
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch from cloud');
+                }
+
+                const data = await response.json();
+                const cloudData = data.record;
+
+                // Merge cloud data with local (cloud wins for conflicts based on timestamp)
+                if (cloudData) {
+                    // Merge logs - use ID to dedupe, keep most recent version
+                    if (cloudData.logs) {
+                        const mergedLogs = mergeLogs(logs, cloudData.logs);
+                        logs = mergedLogs;
+                        localStorage.setItem('headacheLogs', JSON.stringify(logs));
+                    }
+
+                    // Merge cycle data
+                    if (cloudData.cycleData) {
+                        cycleData = mergeCycleData(cycleData, cloudData.cycleData);
+                        localStorage.setItem('cycleData', JSON.stringify(cycleData));
+                    }
+
+                    renderLogs();
+                    updateStats();
+                    updateCycleDisplay();
+                }
+
+                syncStatus = 'synced';
+                lastSyncTime = new Date();
+                updateSyncUI();
+            } catch (e) {
+                console.error('Load from cloud failed:', e);
+                if (!navigator.onLine) {
+                    syncStatus = 'offline';
+                } else {
+                    syncStatus = 'error';
+                }
+                updateSyncUI();
+            }
+        }
+
+        function mergeLogs(local, cloud) {
+            const merged = new Map();
+
+            // Add all local logs
+            local.forEach(log => merged.set(log.id, log));
+
+            // Merge cloud logs (cloud wins if same ID)
+            cloud.forEach(log => {
+                if (!merged.has(log.id) || new Date(log.timestamp) > new Date(merged.get(log.id).timestamp)) {
+                    merged.set(log.id, log);
+                }
+            });
+
+            // Sort by timestamp descending
+            return Array.from(merged.values()).sort((a, b) =>
+                new Date(b.timestamp) - new Date(a.timestamp)
+            );
+        }
+
+        function mergeCycleData(local, cloud) {
+            // Merge periods by start date
+            const mergedPeriods = new Map();
+
+            (local.periods || []).forEach(p => mergedPeriods.set(p.start, p));
+            (cloud.periods || []).forEach(p => {
+                const existing = mergedPeriods.get(p.start);
+                if (!existing || (p.end && !existing.end)) {
+                    mergedPeriods.set(p.start, p);
+                }
+            });
+
+            // Use whichever settings are more recent or have more data
+            const settings = cloud.settings && cloud.periods && cloud.periods.length >= (local.periods || []).length
+                ? cloud.settings
+                : local.settings;
+
+            return {
+                periods: Array.from(mergedPeriods.values()).sort((a, b) =>
+                    new Date(a.start) - new Date(b.start)
+                ),
+                settings: settings
+            };
+        }
+
+        let syncTimeout = null;
+        function scheduleSync() {
+            // Debounce syncs - wait 2 seconds after last change
+            if (syncTimeout) clearTimeout(syncTimeout);
+            syncTimeout = setTimeout(() => saveToCloud(), 2000);
+        }
+
+        async function saveToCloud() {
+            if (!syncConfig || !syncConfig.binId) return;
+
+            syncStatus = 'syncing';
+            updateSyncUI();
+
+            try {
+                const dataToSave = {
+                    logs: logs,
+                    cycleData: cycleData,
+                    lastModified: new Date().toISOString()
+                };
+
+                const response = await fetch(`${JSONBIN_API}/b/${syncConfig.binId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Access-Key': syncConfig.apiKey
+                    },
+                    body: JSON.stringify(dataToSave)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save to cloud');
+                }
+
+                syncStatus = 'synced';
+                lastSyncTime = new Date();
+                updateSyncUI();
+            } catch (e) {
+                console.error('Save to cloud failed:', e);
+                if (!navigator.onLine) {
+                    syncStatus = 'offline';
+                } else {
+                    syncStatus = 'error';
+                }
+                updateSyncUI();
+            }
+        }
+
+        async function manualSync() {
+            if (!syncConfig) {
+                openSyncSettings();
+                return;
+            }
+            await loadFromCloud();
+            await saveToCloud();
+        }
+
+        function openSyncSettings() {
+            const modal = document.getElementById('syncModal');
+            modal.classList.add('active');
+
+            const instructions = document.getElementById('syncInstructions');
+            const keyDisplay = document.getElementById('syncKeyDisplay');
+            const keyInput = document.getElementById('syncKeyInput');
+            const warning = document.getElementById('syncWarning');
+            const primaryBtn = document.getElementById('syncPrimaryBtn');
+            const actions = document.getElementById('syncModalActions');
+
+            if (syncConfig) {
+                // Already set up - show current key
+                instructions.innerHTML = `
+                    <p><strong>Sync is enabled!</strong></p>
+                    <p>Your data syncs automatically across devices.</p>
+                    <p style="margin-top: 12px;">Your sync key (use this on other devices):</p>
+                `;
+                keyDisplay.textContent = syncConfig.syncKey;
+                keyDisplay.style.display = 'block';
+                keyInput.style.display = 'none';
+                warning.style.display = 'block';
+                warning.innerHTML = '💡 Copy this key and enter it on your other devices to sync data.';
+
+                actions.innerHTML = `
+                    <button class="modal-btn secondary" onclick="copyKey()">📋 Copy Key</button>
+                    <button class="modal-btn secondary" onclick="closeSyncSettings()">Done</button>
+                `;
+            } else {
+                // First time setup
+                instructions.innerHTML = `
+                    <p><strong>Sync your data across devices</strong></p>
+                    <p style="margin-top: 8px; color: #888;">Create a new sync to get started, or enter an existing key to connect to your data.</p>
+                `;
+                keyDisplay.style.display = 'none';
+                keyInput.style.display = 'block';
+                warning.style.display = 'none';
+
+                actions.innerHTML = `
+                    <button class="modal-btn secondary" onclick="connectExistingSync()">Connect Existing</button>
+                    <button class="modal-btn primary" onclick="setupNewSync()">Create New Sync</button>
+                `;
+            }
+        }
+
+        function closeSyncSettings() {
+            document.getElementById('syncModal').classList.remove('active');
+        }
+
+        function copyKey() {
+            if (syncConfig && syncConfig.syncKey) {
+                navigator.clipboard.writeText(syncConfig.syncKey).then(() => {
+                    alert('Sync key copied to clipboard!');
+                });
+            }
+        }
+
+        async function setupNewSync() {
+            const instructions = document.getElementById('syncInstructions');
+            instructions.innerHTML = '<p>Creating your sync...</p>';
+
+            try {
+                // Generate a random API key for this user
+                const apiKey = '$2a$10$' + generateRandomString(50);
+
+                // Create a new bin
+                const createResponse = await fetch(`${JSONBIN_API}/b`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Access-Key': apiKey,
+                        'X-Bin-Private': 'true',
+                        'X-Bin-Name': 'headache-tracker-data'
+                    },
+                    body: JSON.stringify({
+                        logs: logs,
+                        cycleData: cycleData,
+                        lastModified: new Date().toISOString()
+                    })
+                });
+
+                if (!createResponse.ok) {
+                    throw new Error('Failed to create sync');
+                }
+
+                const result = await createResponse.json();
+                const binId = result.metadata.id;
+
+                // Create sync key (binId:apiKey encoded)
+                const syncKey = btoa(`${binId}:${apiKey}`);
+
+                // Save config
+                syncConfig = { binId, apiKey, syncKey };
+                localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
+
+                // Update UI
+                syncStatus = 'synced';
+                lastSyncTime = new Date();
+                updateSyncUI();
+
+                // Show the key to user
+                openSyncSettings();
+
+            } catch (e) {
+                console.error('Setup failed:', e);
+                instructions.innerHTML = `<p style="color: #ef4444;">Setup failed: ${e.message}</p><p>Please try again.</p>`;
+            }
+        }
+
+        async function connectExistingSync() {
+            const keyInput = document.getElementById('existingSyncKey').value.trim();
+
+            if (!keyInput) {
+                alert('Please enter your sync key');
+                return;
+            }
+
+            try {
+                // Decode the sync key
+                const decoded = atob(keyInput);
+                const [binId, apiKey] = decoded.split(':');
+
+                if (!binId || !apiKey) {
+                    throw new Error('Invalid sync key format');
+                }
+
+                // Test the connection
+                const response = await fetch(`${JSONBIN_API}/b/${binId}/latest`, {
+                    headers: {
+                        'X-Access-Key': apiKey
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Could not connect - check your key');
+                }
+
+                // Save config
+                syncConfig = { binId, apiKey, syncKey: keyInput };
+                localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
+
+                // Load the data
+                await loadFromCloud();
+
+                closeSyncSettings();
+                alert('Connected! Your data has been synced.');
+
+            } catch (e) {
+                console.error('Connect failed:', e);
+                alert('Failed to connect: ' + e.message);
+            }
+        }
+
+        function generateRandomString(length) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        // Listen for online/offline
+        window.addEventListener('online', () => {
+            if (syncConfig) manualSync();
+        });
+
+        window.addEventListener('offline', () => {
+            syncStatus = 'offline';
+            updateSyncUI();
+        });
 
         // Calculate current cycle day and phase
         function getCycleInfo() {
@@ -2395,6 +2923,7 @@
 
             logs.unshift(log);
             localStorage.setItem('headacheLogs', JSON.stringify(logs));
+            scheduleSync();
 
             hideLogForm();
             renderLogs();
@@ -2464,6 +2993,7 @@
         function deleteLog(id) {
             logs = logs.filter(l => l.id !== id);
             localStorage.setItem('headacheLogs', JSON.stringify(logs));
+            scheduleSync();
             renderLogs();
             updateStats();
         }
@@ -2472,6 +3002,7 @@
             if (confirm('Are you sure you want to delete all entries?')) {
                 logs = [];
                 localStorage.setItem('headacheLogs', JSON.stringify(logs));
+                scheduleSync();
                 renderLogs();
                 updateStats();
             }
@@ -2772,6 +3303,9 @@
             renderLogs();
             updateStats();
             updateCycleDisplay();
+
+            // Initialize cloud sync
+            initSync();
         }
 
         if ('serviceWorker' in navigator) {
